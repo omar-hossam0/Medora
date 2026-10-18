@@ -33,9 +33,6 @@ export const metadata: Metadata = {
       "An AI-driven healthcare platform for clinical workflows, patient records, and connected care.",
     type: "website",
   },
-  icons: {
-    icon: "/favicon.svg",
-  },
 };
 
 export default function RootLayout({

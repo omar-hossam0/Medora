@@ -112,7 +112,7 @@ export function Footer() {
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-8">
           {/* Brand column */}
           <Reveal className="lg:col-span-4">
-            <MedoraLogo variant="light" size="lg" />
+            <MedoraLogo variant="primary" height={40} />
             <p className="mt-5 max-w-[360px] text-[15px] leading-relaxed text-white/70">
               Smarter Healthcare for Healthier Lives. An AI-driven healthcare
               platform built for connected clinical workflows.

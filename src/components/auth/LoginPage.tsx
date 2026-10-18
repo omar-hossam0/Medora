@@ -111,7 +111,7 @@ export function LoginPage() {
                   aria-label="Medora — back to home"
                   className="-m-1 rounded p-1 transition hover:opacity-90"
                 >
-                  <MedoraLogo size="md" />
+                  <MedoraLogo variant="primary" height={30} />
                 </TransitionLink>
 
                 <div className="flex items-center gap-2.5">

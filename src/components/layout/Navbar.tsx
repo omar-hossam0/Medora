@@ -82,7 +82,7 @@ export function Navbar() {
               setOpen(false);
             }}
           >
-            <MedoraLogo size="md" />
+            <MedoraLogo variant="primary" height={32} priority />
           </Link>
 
           {/* Desktop nav */}
