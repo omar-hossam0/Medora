@@ -19,6 +19,9 @@ import { LoginWave } from "./LoginWave";
 import { ASSETS } from "@/lib/constants";
 import { cn } from "@/lib/cn";
 
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
@@ -29,21 +32,25 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const delay = (i: number) => ({ animationDelay: `${i * 45}ms` });
 
 export function LoginPage() {
+  const router = useRouter();
+  const { setUser, setCsrfToken } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [notice, setNotice] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const toastTimer = useRef<number | null>(null);
 
   const showNotice = (msg: string) => {
     setNotice(msg);
     if (toastTimer.current) window.clearTimeout(toastTimer.current);
-    toastTimer.current = window.setTimeout(() => setNotice(null), 3000);
+    toastTimer.current = window.setTimeout(() => setNotice(null), 3500);
   };
 
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const next: { email?: string; password?: string } = {};
     if (!email.trim()) next.email = "Please enter your email address.";
@@ -51,16 +58,59 @@ export function LoginPage() {
       next.email = "Please enter a valid email address.";
     if (!password.trim()) next.password = "Please enter your password.";
     setErrors(next);
+    setServerError(null);
 
     if (Object.keys(next).length > 0) {
       setNotice(null);
       return;
     }
 
-    // Frontend-only: no authentication is connected in this build.
-    showNotice(
-      "Authentication is not connected in this frontend build yet. No account was signed in.",
-    );
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        const errorMsg = data.message || "Failed to sign in. Please verify your credentials.";
+        setServerError(errorMsg);
+        showNotice(errorMsg);
+        return;
+      }
+
+      if (data.user) {
+        setUser(data.user);
+      }
+      if (data.csrfToken) {
+        setCsrfToken(data.csrfToken);
+      }
+
+      showNotice("Signed in successfully. Redirecting...");
+
+      const roles = data.user?.roles || [];
+      if (roles.includes("admin")) {
+        router.push("/admin/dashboard");
+      } else {
+        router.push("/patient/dashboard");
+      }
+    } catch {
+      const fallbackErr = "Unable to connect to authentication server. Please ensure the backend is running.";
+      setServerError(fallbackErr);
+      showNotice(fallbackErr);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -235,12 +285,20 @@ export function LoginPage() {
                   </button>
                 </div>
 
+                {/* Server Error Alert */}
+                {serverError && (
+                  <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-center text-[13.5px] font-medium text-red-700">
+                    {serverError}
+                  </div>
+                )}
+
                 {/* Sign In */}
                 <button
                   type="submit"
-                  className="group mt-2 inline-flex h-[58px] w-full items-center justify-center gap-2 rounded-full bg-[linear-gradient(90deg,#005e59_0%,#008d81_65%,#0bb2a2_100%)] px-6 text-[17px] font-semibold text-white shadow-tealGlow transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  disabled={isSubmitting}
+                  className="group mt-2 inline-flex h-[58px] w-full items-center justify-center gap-2 rounded-full bg-[linear-gradient(90deg,#005e59_0%,#008d81_65%,#0bb2a2_100%)] px-6 text-[17px] font-semibold text-white shadow-tealGlow transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  Sign In
+                  {isSubmitting ? "Signing In..." : "Sign In"}
                   <span className="grid h-7 w-7 place-items-center rounded-full bg-white/20 transition-transform group-hover:translate-x-0.5">
                     <ArrowRight size={15} />
                   </span>

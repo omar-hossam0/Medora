@@ -13,6 +13,7 @@ import dashboardUi from "@/assets/hq/dashboard-ui.png";
 import devicesMockup from "@/assets/hq/devices-mockup.png";
 import reception from "@/assets/hq/reception.jpg";
 import loginBg from "@/assets/Modern Medora Healthcare Lobby.png";
+import adminHero from "@/assets/hq/admin-hero.jpg";
 
 import aiAnalysis from "@/assets/05_ai_analysis.png";
 import consultation from "@/assets/06_consultation.png";
@@ -61,6 +62,7 @@ export const ASSETS = {
   devices: devicesMockup,
   reception,
   loginBg,
+  adminHero,
   aiAnalysis,
   consultation,
   receptionStaff,

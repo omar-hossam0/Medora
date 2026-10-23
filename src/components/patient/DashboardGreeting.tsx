@@ -10,12 +10,16 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { ASSETS } from "@/lib/constants";
+import { useAuth } from "@/lib/auth-context";
 import { patient, nextAppointment, today } from "@/lib/mock/patient";
 import { Avatar } from "./ui";
 import { useComingSoon } from "./ComingSoon";
 
 export function DashboardGreeting() {
   const comingSoon = useComingSoon();
+  const { user } = useAuth();
+  const firstName =
+    user?.full_name?.trim().split(/\s+/)[0] || patient.firstName;
 
   return (
     <section>
@@ -23,7 +27,7 @@ export function DashboardGreeting() {
       <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
         <div>
           <h1 className="text-[21px] font-bold tracking-[-0.01em] text-[#0F2D4A] sm:text-[24px]">
-            Good morning, {patient.firstName} <span aria-hidden>👋</span>
+            Good morning, {firstName} <span aria-hidden>👋</span>
           </h1>
           <p className="mt-0.5 text-[13px] text-[#5B6B7C]">
             Take charge of your health journey with Medora.

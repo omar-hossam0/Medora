@@ -3,12 +3,19 @@
 import { useState } from "react";
 import { Menu, Search, Bell, ChevronDown } from "lucide-react";
 import { patient } from "@/lib/mock/patient";
+import { useAuth } from "@/lib/auth-context";
 import { Avatar } from "./ui";
 import { cn } from "@/lib/cn";
 
 export function PatientTopbar({ onMenu }: { onMenu: () => void }) {
   const [query, setQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
+
+  const displayName = user?.full_name?.trim() || patient.fullName;
+  const roleLabel = user?.roles?.length
+    ? user.roles[0].charAt(0).toUpperCase() + user.roles[0].slice(1)
+    : patient.role;
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-line bg-white px-4 sm:px-6 lg:px-8">
@@ -58,12 +65,12 @@ export function PatientTopbar({ onMenu }: { onMenu: () => void }) {
             aria-expanded={menuOpen}
             className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-2 transition hover:bg-surface-subtle"
           >
-            <Avatar name={patient.fullName} size={36} />
+            <Avatar name={displayName} size={36} />
             <span className="hidden text-left leading-tight sm:block">
-              <span className="block text-[13px] font-semibold text-navy">
-                {patient.fullName}
+              <span className="block max-w-[150px] truncate text-[13px] font-semibold text-navy">
+                {displayName}
               </span>
-              <span className="block text-[11px] text-ink-muted">{patient.role}</span>
+              <span className="block text-[11px] text-ink-muted">{roleLabel}</span>
             </span>
             <ChevronDown
               size={16}
@@ -78,18 +85,35 @@ export function PatientTopbar({ onMenu }: { onMenu: () => void }) {
                 role="menu"
                 className="absolute right-0 z-20 mt-2 w-48 overflow-hidden rounded-xl border border-line bg-white py-1 shadow-pop"
               >
-                {["Profile", "Settings", "Sign out"].map((label) => (
-                  <button
-                    key={label}
-                    type="button"
-                    role="menuitem"
-                    onClick={() => setMenuOpen(false)}
-                    className="block w-full px-4 py-2 text-left text-[13px] text-ink-secondary transition hover:bg-surface-subtle"
-                    title="Coming soon"
-                  >
-                    {label}
-                  </button>
-                ))}
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => setMenuOpen(false)}
+                  title="Coming soon"
+                  className="block w-full px-4 py-2 text-left text-[13px] text-ink-secondary transition hover:bg-surface-subtle"
+                >
+                  Profile
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => setMenuOpen(false)}
+                  title="Coming soon"
+                  className="block w-full px-4 py-2 text-left text-[13px] text-ink-secondary transition hover:bg-surface-subtle"
+                >
+                  Settings
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    void logout();
+                  }}
+                  className="block w-full border-t border-line px-4 py-2 text-left text-[13px] font-medium text-[#E5484D] transition hover:bg-[#FDECEF]"
+                >
+                  Sign out
+                </button>
               </div>
             </>
           )}

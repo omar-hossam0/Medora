@@ -27,6 +27,8 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 /** Staggered CSS reveal — runs on first paint (no hydration gate → no blank). */
 const reveal = (i: number) => ({ animationDelay: `${i * 30}ms` });
 
+import { useRouter } from "next/navigation";
+
 type Errors = Partial<
   Record<
     "firstName" | "lastName" | "email" | "phone" | "password" | "confirm" | "agree",
@@ -35,6 +37,7 @@ type Errors = Partial<
 >;
 
 export function SignUpPage() {
+  const router = useRouter();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -49,12 +52,14 @@ export function SignUpPage() {
 
   const [errors, setErrors] = useState<Errors>({});
   const [notice, setNotice] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const toastTimer = useRef<number | null>(null);
 
   const showNotice = (msg: string) => {
     setNotice(msg);
     if (toastTimer.current) window.clearTimeout(toastTimer.current);
-    toastTimer.current = window.setTimeout(() => setNotice(null), 3200);
+    toastTimer.current = window.setTimeout(() => setNotice(null), 3500);
   };
 
   const reqs = [
@@ -65,7 +70,7 @@ export function SignUpPage() {
   ];
   const passwordValid = reqs.every((r) => r.met);
 
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const next: Errors = {};
     if (!firstName.trim()) next.firstName = "Please enter your first name.";
@@ -84,15 +89,56 @@ export function SignUpPage() {
       next.agree = "Please agree to the Terms of Service and Privacy Policy.";
 
     setErrors(next);
+    setServerError(null);
+
     if (Object.keys(next).length > 0) {
       setNotice(null);
       return;
     }
 
-    // Frontend-only: no account is created and no credentials are stored.
-    showNotice(
-      "Account creation is not connected to the backend yet. Your details were validated locally and nothing was submitted.",
-    );
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          full_name: `${firstName.trim()} ${lastName.trim()}`,
+          email: email.trim(),
+          password,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (res.status === 409) {
+          setErrors((p) => ({
+            ...p,
+            email: "An account with this email address already exists.",
+          }));
+        }
+        const errorMsg =
+          data.message || "Failed to create account. Please verify your information.";
+        setServerError(errorMsg);
+        showNotice(errorMsg);
+        return;
+      }
+
+      showNotice("Account created successfully! Redirecting to sign in...");
+      setTimeout(() => {
+        router.push("/login");
+      }, 1500);
+    } catch {
+      const fallbackMsg =
+        "Unable to connect to authentication server. Please ensure the backend is running.";
+      setServerError(fallbackMsg);
+      showNotice(fallbackMsg);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const clear = (k: keyof Errors) =>
@@ -395,12 +441,20 @@ export function SignUpPage() {
                     )}
                   </div>
 
+                  {/* Server Error Alert */}
+                  {serverError && (
+                    <div className="mt-2 rounded-xl border border-red-200 bg-red-50 p-2.5 text-center text-[13px] font-medium text-red-700">
+                      {serverError}
+                    </div>
+                  )}
+
                   {/* Create Account */}
                   <button
                     type="submit"
-                    className="group mt-3 inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-full bg-[linear-gradient(90deg,#005e59_0%,#008d81_65%,#0bb2a2_100%)] px-6 text-[15px] font-semibold text-white shadow-tealGlow transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                    disabled={isSubmitting}
+                    className="group mt-3 inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-full bg-[linear-gradient(90deg,#005e59_0%,#008d81_65%,#0bb2a2_100%)] px-6 text-[15px] font-semibold text-white shadow-tealGlow transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                    Create Account
+                    {isSubmitting ? "Creating Account..." : "Create Account"}
                     <span className="grid h-7 w-7 place-items-center rounded-full bg-white/20 transition-transform group-hover:translate-x-0.5">
                       <ArrowRight size={15} />
                     </span>
